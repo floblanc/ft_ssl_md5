@@ -6,7 +6,7 @@
 #    By: floblanc <floblanc@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2020/09/09 11:54:28 by floblanc          #+#    #+#              #
-#    Updated: 2020/09/09 12:19:35 by floblanc         ###   ########.fr        #
+#    Updated: 2020/09/09 13:54:15 by floblanc         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -100,7 +100,7 @@ INC_NAME =			ft_ssl_md5.h
 
 
 LIBFT				=	./libftprintf/
-LIBFT_NAME			=	libftprintf.a
+LIBFT_NAME			=	libprintf.a
 LIBFTINCLUDES		=	./libftprintf/include/
 
 INC	= $(addprefix $(INC_PATH), $(INC_NAME))

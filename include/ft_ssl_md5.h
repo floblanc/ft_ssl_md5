@@ -6,7 +6,7 @@
 /*   By: floblanc <floblanc@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/09/08 12:26:51 by floblanc          #+#    #+#             */
-/*   Updated: 2020/09/09 11:57:56 by floblanc         ###   ########.fr       */
+/*   Updated: 2020/09/09 14:40:56 by floblanc         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,12 +19,13 @@
 # include <sys/types.h>
 # include <sys/uio.h>
 # include <stdlib.h>
+# include <math.h>
 
 # define STDIN 0
 # define STDOUT 1
 # define STDERR 2
 
-typedef struct      s_data
+typedef struct      s_var
 {
     unsigned int    h0;
     unsigned int    h1;
@@ -38,6 +39,7 @@ typedef struct      s_data
     unsigned int    g;
     unsigned int    r[64];
     unsigned int    k[64];
-}                   t_data;
+    size_t          len;
+}                   t_var;
 
 #endif

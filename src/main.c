@@ -6,7 +6,7 @@
 /*   By: floblanc <floblanc@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/09/08 12:17:02 by floblanc          #+#    #+#             */
-/*   Updated: 2020/09/09 12:00:00 by floblanc         ###   ########.fr       */
+/*   Updated: 2020/09/09 16:34:31 by floblanc         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,67 +17,74 @@ void    write_specified(int output, char* content)
     write(output, content, ft_strlen(content));
 }
 
-char* init_msg(char* msg)
+char* init_msg(char* msg, t_var *data)
 {
     char* new_msg;
     size_t new_len;
     size_t len;
-    size_t lenBit;
-    static int i = 0;;
 
     len = (unsigned long int)ft_strlen(msg);
-    lenBit = len * 8;
-    new_len = 512 * (((lenBit + 1) / 512) + 1);
+    data->len = len * 8;
+    new_len = 512 * (((data->len + 1) / 512) + 1);
     if (!(new_msg = (char*)malloc(sizeof(char) * new_len)))
         return (0);
     ft_bzero(new_msg, new_len);
-    ft_memcpy(new_msg, &(lenBit), 8);
-    ft_strcpy(&(new_msg[8]), msg);
-    new_msg[len + 8] = 0x80;
+    ft_strcpy(new_msg, msg);
+    new_msg[len] = 0x80;
+    ft_memcpy(&(new_msg[(new_len / 8) - 8]), &(data->len), 8);
+    ft_printf("%d\n",data->len);
     return (new_msg);
 }
 
-int leftrotate (int x, int offset)
+unsigned int leftrotate (unsigned int x, unsigned int offset)
 {
     return ( x << offset ) | ( x >> (32 - offset));
 }
 
-void abcd_modif(unsigned int* msg, unsigned int i, t_data *data)
+void abcd_modif(unsigned int* msg, unsigned int i, t_var *data)
 {
     unsigned int tmp;
 
-    tmp = (*data).d;
-    (*data).d = (*data).c;
-    (*data).c = (*data).b;
-    (*data).b = leftrotate((*data).a + (*data).f + (*data).k[i] + msg[(*data).g], (*data).r[i]) + (*data).b;
-    (*data).a = tmp;
+    tmp = data->d;
+    data->d = data->c;
+    data->c = data->b;
+    ft_printf("rotateLeft(%u + %u + %u + %u, %u) i = %u\n", data->a, data->f, data->k[i], msg[data->g], data->r[i], i);
+    data->b = leftrotate(data->a + data->f + data->k[i] + msg[data->g], data->r[i]) + data->b;
+    data->a = tmp;
+    // ft_printf("%u -> g=%u [i = %d] A=%u B=%u C=%u D=%u\n",msg[data->g], data->g, i, data->a, data->b, data->c, data->d);
 }
 
-void    main_while(char *msg, t_data *data, int i)
+void    main_while(char *msg, t_var *data, int i)
 {
+    while (i < 16)
+    {
+        ft_printf("[%d]%u\n",i, ((unsigned int*)(msg))[i]);
+        i++;
+    }
+    i = 0;
     while (i < 64)
     {
         if (i < 16)
         {
-            (*data).f = ((*data).b & (*data).c) | ((~(*data).b) & (*data).d);
-            (*data).g = i;
+            data->f = (data->b & data->c) | ((~data->b) & data->d);
+            data->g = i;
         }
         else if (i < 32)
         {
-            (*data).f = ((*data).d & (*data).b) | ((~(*data).d) & (*data).c);
-            (*data).g = (i * 5 + 1) % 16;
+            data->f = (data->d & data->b) | ((~data->d) & data->c);
+            data->g = (i * 5 + 1) % 16;
         }
         else if (i < 48)
         {
-            (*data).f = (*data).b ^ (*data).c ^ (*data).d;
-            (*data).g = (i * 3 + 5) % 16;
+            data->f = data->b ^ data->c ^ data->d;
+            data->g = (i * 3 + 5) % 16;
         }
         else
         {
-            (*data).f = (*data).c ^ ((*data).b | (~(*data).d));
-            (*data).g = (i * 7) % 16;
+            data->f = data->c ^ (data->b | (~data->d));
+            data->g = (i * 7) % 16;
         }
-        abcd_modif((int*)msg, i, data);
+        abcd_modif((unsigned int*)msg, i, data);
         i++;
     }
 }
@@ -87,56 +94,97 @@ char* byte_to_hex(uint8_t* mem, unsigned int bytes)
     char*           result;
     unsigned int    i;
     char*           tmp;
+    char*            one;
 
+    one = 0;
     if (!(result = (char*)malloc((sizeof(char) * bytes * 2) + 1)))
         return (0);
     i = 0;
     while (i < bytes)
     {
         tmp = ft_itoa_base((int)(mem[i]), "0123456789abcdef");
-        ft_strcpy(result + (i * 2), tmp);
+
+        if (ft_strlen(tmp) == 1)
+        {
+            one = ft_strjoin("0",tmp);
+            ft_strdel(&tmp);
+            tmp = one;
+            one = 0;
+        }
+        ft_strcpy(&(result[i * 2]), tmp);
+        ft_printf("tmp = %s\n", tmp);
         ft_strdel(&tmp);
         i++;
     }
     return (result);
 }
 
-char*   md5(char* msg, t_data *data)
+char*   md5(char* msg, t_var *data)
 {
     unsigned int    bit;
     char*           result;
     
     bit = 0;
-    while (bit < 512 * (((*((unsigned int*)msg)) / 512) + 1))
+    while (bit < data->len)
     {
-        (*data).a = (*data).h0;
-        (*data).b = (*data).h1;
-        (*data).c = (*data).h2;
-        (*data).d = (*data).h3;
-        main_while(msg + (bit / 8), &data, 0);
+        data->a = data->h0;
+        data->b = data->h1;
+        data->c = data->h2;
+        data->d = data->h3;
+        main_while(msg + (int)(bit / 8), data, 0);
         bit += 512;
-        (*data).h0 += (*data).a;
-        (*data).h1 += (*data).b;
-        (*data).h2 += (*data).c;
-        (*data).h3 += (*data).d;
+        data->h0 += data->a;
+        data->h1 += data->b;
+        data->h2 += data->c;
+        data->h3 += data->d;
     }
     if (!(result = (char*)malloc(sizeof(int) * 4)))
         return (0);
-    ft_memcpy(result, &((*data).h0), 4);
-    ft_memcpy(result + 4, &((*data).h1), 4);
-    ft_memcpy(result + 8, &((*data).h2), 4);
-    ft_memcpy(result + 12, &((*data).h3), 4);
+    ft_memcpy(result, &(data->h0), 4);
+    ft_memcpy(result + 4, &(data->h1), 4);
+    ft_memcpy(result + 8, &(data->h2), 4);
+    ft_memcpy(result + 12, &(data->h3), 4);
     ft_strdel(&msg);
     return (result);
+}
+void    init_var(t_var *data)
+{
+    unsigned int    i;
+    static unsigned int tmp[16] = {7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21};
+    
+    ft_bzero(data, sizeof(t_var));
+    data->h0 = 0x67452301;
+    data->h1 = 0xEFCDAB89;
+    data->h2 = 0x98BADCFE;
+    data->h3 = 0x10325476;
+    i = 0;
+    while (i < 64)
+    {
+        data->k[i] = (unsigned int)(floor(fabs(sin(i + 1)) * pow(2,32)));
+        ft_printf("r[%u]=%u\n", i, data->k[i]);
+        i++;
+    }
+    i = 0;
+    while (i < 64)
+    {
+        data->r[i] = tmp[(i % 4) + (4 * (int)(i / 16))];
+        ft_printf("k[%u]=%u\n", i, data->r[i]);
+        i++;
+    }
 }
 
 int main(int ac, char** av)
 {
     char*   msg;
-    t_data  data;
+    t_var* data;
 
-    msg = init_msg("test"/*find_msg(ac, av)*/);
-    msg = md5(msg, &data);
+    (void)ac;
+    if (!(data = (t_var*)malloc(sizeof(t_var) * 1)))
+        return (0);
+    init_var(data);
+    msg = init_msg(av[1], data);
+    msg = md5(msg, data);
+    ft_printf("A=%u B=%u C=%u D=%u\n", data->a, data->b, data->c, data->d);
     ft_printf("%s",byte_to_hex((void*)msg, 16));
     return (0);
 }
