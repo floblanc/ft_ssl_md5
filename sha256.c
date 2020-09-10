@@ -32,33 +32,6 @@ void abcd_modif(unsigned int* msg, unsigned int i, t_var *data)
 
 */
 
-
-void printStringAsBinary(char *input, int inputLen)
-{
-	char * temp = input;
-	int i = 7, j =0;;
-	//int inputLen = strlen(input);
-
-	/* Go over the string, check first bit..bit by bit and print 1 or 0
-	**/
-
-	for (j = 0; j < inputLen; j++) {
-		while (i>=0) {
-			if (*temp & (1 << i)) {
-			printf("1");
-			} else {
-				printf("0");
-			}
-			i--;
-		}
-		printf(" ");
-		temp = temp+1;
-		i = 7;
-		if ((j + 1) % 8 == 0)
-			printf("\n");
-	}
-}
-
 char* byte_to_hex(uint8_t* mem, unsigned int bytes)
 {
 	char*           result;
@@ -88,7 +61,7 @@ char* byte_to_hex(uint8_t* mem, unsigned int bytes)
 
 unsigned int rightrotate (unsigned int x, unsigned int offset)
 {
-	return ( x >> offset ) | ( x << (32 - offset));
+	return ( x >> offset % 32) | ( x << (32 - offset) % 32);
 }
 
 void	init_var(t_var *data)
@@ -128,11 +101,11 @@ void	init_var(t_var *data)
 char* init_msg(char* msg, t_var *data)
 {
 	char* new_msg;
-	size_t new_len;
-	size_t len;
+	uint64_t new_len;
+	uint64_t len;
 	unsigned int i;
 
-	len = (unsigned long int)ft_strlen(msg);
+	len = (uint64_t)ft_strlen(msg);
 	data->len = len * 8;
 	new_len = 512 * (((data->len + 1) / 512) + 1);
 	if (!(new_msg = (char*)malloc(sizeof(char) * new_len)))
@@ -140,12 +113,16 @@ char* init_msg(char* msg, t_var *data)
 	ft_bzero(new_msg, new_len);
 	ft_strcpy(new_msg, msg);
 	new_msg[len] = 0x80;
-	(unsigned int *)new_msg[15] = data->len;
+	printf("new_msg : %s\n", new_msg);
+	((uint64_t*)new_msg)[7] = data->len;
+	i = 0;
 	//printf("%u", data->len);
 	//ft_memcpy(&(new_msg[(new_len / 8) - 8]), &(data->len), 8);
 	//ft_printf("%d\n", data->len);
 	return (new_msg);
 }
+
+#define REV(n) ((n << 24) | (((n>>16)<<24)>>16) | (((n<<16)>>24)<<16) | (n>>24)) 
 
 void	main_while(char *msg, t_var *data, int i)
 {
@@ -156,8 +133,13 @@ void	main_while(char *msg, t_var *data, int i)
 	unsigned int maj;
 	unsigned int ch;
 
-	ft_memcpy(data->w, msg, 64);
+	ft_bzero(data->w, sizeof(unsigned int) * 64);
+	//ft_memcpy(data->w, msg, 64);
 	i = 0;
+	//printf("%x %x %x %x\n", ((unsigned char*)data->w)[0],
+	//						((unsigned char*)data->w)[1],
+	//						((unsigned char*)data->w)[2],
+	//						((unsigned char*)data->w)[3]);
 	while (i < 64) {
 		if (i > 15)
 		{
@@ -165,11 +147,16 @@ void	main_while(char *msg, t_var *data, int i)
 			s1 = rightrotate(data->w[i- 2], 17) ^ rightrotate(data->w[i- 2], 19) ^ (data->w[i- 2] >> 10);
 			data->w[i] = data->w[i-16] + s0 + data->w[i-7] + s1;
 		}
+		else
+		{
+			data->w[i] = ((unsigned int)msg[i * 4 + 0] << 24| (unsigned int)msg[i * 4 + 1] << 16 |
+			(unsigned int)msg[i * 4 + 2] << 8 );//| (unsigned int)msg[i * 4 + 3]);
+		}
 		i++;
 	}
-	ft_printf("\n");
+	printf("after memcpy %8.8x\n vs msg : %8.8x\n", *(data->w), *((unsigned int *)msg));
 	i = 0;
-	while (i < 64)
+	while (i < 1)
 	{
 		s1 = rightrotate(data->e, 6) ^ rightrotate(data->e, 11) ^ rightrotate(data->e, 25);
 		ch = (data->e & data->f) ^ ((~data->e) & data->g);
@@ -185,11 +172,12 @@ void	main_while(char *msg, t_var *data, int i)
 		data->c = data->b;
 		data->b = data->a;
 		data->a = temp1 + temp2;
+		printf("t= %2d: %8.8x %8.8x %8.8x %8.8x %8.8x %8.8x %8.8x %8.8x\n", i, data->a, data->b, data->c, data->d, data->e, data->f, data->g, data->h);
 		i++;
 	}
 }
 
-char*   sha256(char* msg, t_var *data)
+char*	sha256(char* msg, t_var *data)
 {
 	unsigned int	bit;
 	char*			result;
@@ -228,6 +216,7 @@ char*   sha256(char* msg, t_var *data)
 	ft_strdel(&msg);
 	return (result);
 }
+#include <stdio.h>
 
 int main(int ac, char** av)
 {
@@ -240,8 +229,7 @@ int main(int ac, char** av)
 	msg = init_msg(av[1], data);
 	msg = sha256(msg, data);
 	/*ft_printf("A=%u B=%u C=%u D=%u\n", data->a, data->b, data->c, data->d);*/
-	//ft_printf("%s",byte_to_hex((void*)msg, 32));
-	return (0);
+	ft_printf("%s",byte_to_hex((void*)msg, 32));
 }
-
-//gcc sha256.c -I include libftprintf/libprintf.a; ./a.out "hello world"
+//https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHA256.pdf
+//gcc sha256.c -I include libftprintf/libprintf.a; ./a.out "abc"

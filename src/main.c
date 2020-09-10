@@ -6,11 +6,11 @@
 /*   By: floblanc <floblanc@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/09/08 12:17:02 by floblanc          #+#    #+#             */
-/*   Updated: 2020/09/09 16:34:31 by floblanc         ###   ########.fr       */
+/*   Updated: 2020/09/10 17:39:49 by floblanc         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_ssl_md5.h"
+#include "../include/ft_ssl_md5.h"
 
 void    write_specified(int output, char* content)
 {
@@ -32,7 +32,6 @@ char* init_msg(char* msg, t_var *data)
     ft_strcpy(new_msg, msg);
     new_msg[len] = 0x80;
     ft_memcpy(&(new_msg[(new_len / 8) - 8]), &(data->len), 8);
-    ft_printf("%d\n",data->len);
     return (new_msg);
 }
 
@@ -48,20 +47,12 @@ void abcd_modif(unsigned int* msg, unsigned int i, t_var *data)
     tmp = data->d;
     data->d = data->c;
     data->c = data->b;
-    ft_printf("rotateLeft(%u + %u + %u + %u, %u) i = %u\n", data->a, data->f, data->k[i], msg[data->g], data->r[i], i);
     data->b = leftrotate(data->a + data->f + data->k[i] + msg[data->g], data->r[i]) + data->b;
     data->a = tmp;
-    // ft_printf("%u -> g=%u [i = %d] A=%u B=%u C=%u D=%u\n",msg[data->g], data->g, i, data->a, data->b, data->c, data->d);
 }
 
 void    main_while(char *msg, t_var *data, int i)
 {
-    while (i < 16)
-    {
-        ft_printf("[%d]%u\n",i, ((unsigned int*)(msg))[i]);
-        i++;
-    }
-    i = 0;
     while (i < 64)
     {
         if (i < 16)
@@ -112,7 +103,6 @@ char* byte_to_hex(uint8_t* mem, unsigned int bytes)
             one = 0;
         }
         ft_strcpy(&(result[i * 2]), tmp);
-        ft_printf("tmp = %s\n", tmp);
         ft_strdel(&tmp);
         i++;
     }
@@ -161,14 +151,12 @@ void    init_var(t_var *data)
     while (i < 64)
     {
         data->k[i] = (unsigned int)(floor(fabs(sin(i + 1)) * pow(2,32)));
-        ft_printf("r[%u]=%u\n", i, data->k[i]);
         i++;
     }
     i = 0;
     while (i < 64)
     {
         data->r[i] = tmp[(i % 4) + (4 * (int)(i / 16))];
-        ft_printf("k[%u]=%u\n", i, data->r[i]);
         i++;
     }
 }
@@ -184,7 +172,6 @@ int main(int ac, char** av)
     init_var(data);
     msg = init_msg(av[1], data);
     msg = md5(msg, data);
-    ft_printf("A=%u B=%u C=%u D=%u\n", data->a, data->b, data->c, data->d);
     ft_printf("%s",byte_to_hex((void*)msg, 16));
     return (0);
 }
