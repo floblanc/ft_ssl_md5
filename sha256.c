@@ -61,7 +61,7 @@ char* byte_to_hex(uint8_t* mem, unsigned int bytes)
 
 unsigned int rightrotate (unsigned int x, unsigned int offset)
 {
-	return ( x >> offset % 32) | ( x << (32 - offset) % 32);
+	return ((x >> offset) | ( x << (32 - offset)));
 }
 
 void	init_var(t_var *data)
@@ -107,22 +107,28 @@ char* init_msg(char* msg, t_var *data)
 
 	len = (uint64_t)ft_strlen(msg);
 	data->len = len * 8;
-	new_len = 512 * (((data->len + 1) / 512) + 1);
+	new_len = 512 * (((data->len + 8 + 64) / 512) + 1);
 	if (!(new_msg = (char*)malloc(sizeof(char) * new_len)))
 		return (0);
 	ft_bzero(new_msg, new_len);
 	ft_strcpy(new_msg, msg);
 	new_msg[len] = 0x80;
 	printf("new_msg : %s\n", new_msg);
-	((uint64_t*)new_msg)[7] = data->len;
 	i = 0;
-	//printf("%u", data->len);
+	while (i < 8)
+	{
+		new_msg[(new_len / 8 )+ i - 8] = ((uint8_t*)(&data->len))[7 - i];
+		i++;
+	}
+	printf("%x\n", ((uint8_t*)new_msg)[63]);
+	// printf("%u\n", data->len);
+	data->len = new_len;
 	//ft_memcpy(&(new_msg[(new_len / 8) - 8]), &(data->len), 8);
 	//ft_printf("%d\n", data->len);
 	return (new_msg);
 }
 
-#define REV(n) ((n << 24) | (((n>>16)<<24)>>16) | (((n<<16)>>24)<<16) | (n>>24)) 
+// #define REV(n) ((n << 24) | (((n>>16)<<24)>>16) | (((n<<16)>>24)<<16) | (n>>24)) 
 
 void	main_while(char *msg, t_var *data, int i)
 {
@@ -134,44 +140,49 @@ void	main_while(char *msg, t_var *data, int i)
 	unsigned int ch;
 
 	ft_bzero(data->w, sizeof(unsigned int) * 64);
-	//ft_memcpy(data->w, msg, 64);
-	i = 0;
-	//printf("%x %x %x %x\n", ((unsigned char*)data->w)[0],
-	//						((unsigned char*)data->w)[1],
-	//						((unsigned char*)data->w)[2],
-	//						((unsigned char*)data->w)[3]);
+	ft_memcpy(data->w, msg, 64);
+	printf("works %x\n", ((uint8_t*)data->w)[63]);
+	for(int j = 0; j < 16; j++)
+	{
+		printf("%.8x\n", data->w[j]);
+	}
+	printf("\n");
+	i = 16;
 	while (i < 64) {
-		if (i > 15)
-		{
+		// if (i > 15)
+		// {
 			s0 = rightrotate(data->w[i-15], 7) ^ rightrotate(data->w[i-15], 18) ^ (data->w[i-15] >> 3);
 			s1 = rightrotate(data->w[i- 2], 17) ^ rightrotate(data->w[i- 2], 19) ^ (data->w[i- 2] >> 10);
-			data->w[i] = data->w[i-16] + s0 + data->w[i-7] + s1;
-		}
-		else
-		{
-			data->w[i] = ((unsigned int)msg[i * 4 + 0] << 24| (unsigned int)msg[i * 4 + 1] << 16 |
-			(unsigned int)msg[i * 4 + 2] << 8 );//| (unsigned int)msg[i * 4 + 3]);
-		}
+			data->w[i] = (data->w[i-16] + s0 + data->w[i-7] + s1) % (uint64_t)pow(2,32);
+		// }
+		// else
+		// {
+		// 	data->w[i] = ((unsigned int)msg[i * 4 + 0] << 24| (unsigned int)msg[i * 4 + 1] << 16 |
+		// 	(unsigned int)msg[i * 4 + 2] << 8 );//| (unsigned int)msg[i * 4 + 3]);
+		// }
 		i++;
 	}
-	printf("after memcpy %8.8x\n vs msg : %8.8x\n", *(data->w), *((unsigned int *)msg));
+	for(int j = 0; j < 64; j++)
+	{
+		printf("%.8x\n", data->w[j]);
+	}
 	i = 0;
-	while (i < 1)
+	while (i < 64)
 	{
 		s1 = rightrotate(data->e, 6) ^ rightrotate(data->e, 11) ^ rightrotate(data->e, 25);
 		ch = (data->e & data->f) ^ ((~data->e) & data->g);
-		temp1 = data->h + s1 + ch + data->k[i] + data->w[i];
+		temp1 = (data->h + s1 + ch + data->k[i] + data->w[i]) % (uint64_t)pow(2,32);
 		s0 = rightrotate(data->a , 2) ^ rightrotate(data->a, 13) ^ rightrotate(data->a, 22);
 		maj = (data->a & data->b) ^ (data->a & data->c) ^ (data->b & data->c);
-		temp2 = s0 + maj;
+		temp2 = (s0 + maj) % (uint64_t)pow(2,32);
 		data->h = data->g;
 		data->g = data->f;
 		data->f = data->e;
-		data->e = data->d + temp1;
+		data->e = (data->d + temp1) % (uint64_t)pow(2,32);
 		data->d = data->c;
 		data->c = data->b;
 		data->b = data->a;
-		data->a = temp1 + temp2;
+		data->a = (temp1 + temp2) % (uint64_t)pow(2,32);
 		printf("t= %2d: %8.8x %8.8x %8.8x %8.8x %8.8x %8.8x %8.8x %8.8x\n", i, data->a, data->b, data->c, data->d, data->e, data->f, data->g, data->h);
 		i++;
 	}
@@ -194,14 +205,14 @@ char*	sha256(char* msg, t_var *data)
 		data->h = data->h7;
 		main_while(msg + (int)(bit / 8), data, 0);
 		bit += 512;
-		data->h0 = data->h0 + data->a;
-		data->h1 = data->h1 + data->b;
-		data->h2 = data->h2 + data->c;
-		data->h3 = data->h3 + data->d;
-		data->h4 = data->h4 + data->e;
-		data->h5 = data->h5 + data->f;
-		data->h6 = data->h6 + data->g;
-		data->h7 = data->h7 + data->h;
+		data->h0 = (data->h0 + data->a) % (uint64_t)pow(2,32);
+		data->h1 = (data->h1 + data->b) % (uint64_t)pow(2,32);
+		data->h2 = (data->h2 + data->c) % (uint64_t)pow(2,32);
+		data->h3 = (data->h3 + data->d) % (uint64_t)pow(2,32);
+		data->h4 = (data->h4 + data->e) % (uint64_t)pow(2,32);
+		data->h5 = (data->h5 + data->f) % (uint64_t)pow(2,32);
+		data->h6 = (data->h6 + data->g) % (uint64_t)pow(2,32);
+		data->h7 = (data->h7 + data->h) % (uint64_t)pow(2,32);
 	}
 	if (!(result = (char*)malloc(sizeof(int) * 8)))
 		return (0);

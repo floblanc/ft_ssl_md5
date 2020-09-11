@@ -6,7 +6,7 @@
 /*   By: floblanc <floblanc@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/09/08 12:17:02 by floblanc          #+#    #+#             */
-/*   Updated: 2020/09/10 17:39:49 by floblanc         ###   ########.fr       */
+/*   Updated: 2020/09/11 12:06:41 by floblanc         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ char* init_msg(char* msg, t_var *data)
     ft_strcpy(new_msg, msg);
     new_msg[len] = 0x80;
     ft_memcpy(&(new_msg[(new_len / 8) - 8]), &(data->len), 8);
+    data->len = new_len;
     return (new_msg);
 }
 

@@ -45,6 +45,6 @@ typedef struct	s_var
 	unsigned int	h;
 	unsigned int	k[64];
 	unsigned int	w[64];
-	size_t			len;
+	uint64_t		len;
 }					t_var;
 #endif
