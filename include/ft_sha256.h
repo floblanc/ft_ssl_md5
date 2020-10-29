@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ft_sha256.h                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: judumay <judumay@student.42.fr>            +#+  +:+       +#+        */
+/*   By: floblanc <floblanc@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2020/09/08 16:49:28 by apouchet          #+#    #+#             */
-/*   Updated: 2020/09/10 14:09:005 by judumay          ###   ########.fr       */
+/*   Created: 2020/10/29 11:11:46 by floblanc          #+#    #+#             */
+/*   Updated: 2020/10/29 11:11:47 by floblanc         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,22 +19,11 @@
 # include <strings.h>
 # include <math.h>
 # include <fcntl.h>
-# include "../libftprintf/include/libprintf.h"
+# include "../libft/libft.h"
 
-
-# define STDIN 0
-# define STDOUT 1
-# define STDERR 2
-typedef struct	s_var
+typedef struct		s_v
 {
-	unsigned int	h0;
-	unsigned int	h1;
-	unsigned int	h2;
-	unsigned int	h3;
-	unsigned int	h4;
-	unsigned int	h5;
-	unsigned int	h6;
-	unsigned int	h7;
+	unsigned int	var_h[8];
 	unsigned int	a;
 	unsigned int	b;
 	unsigned int	c;
@@ -45,6 +34,35 @@ typedef struct	s_var
 	unsigned int	h;
 	unsigned int	k[64];
 	unsigned int	w[64];
-	uint64_t		len;
-}					t_var;
+	unsigned int	nb_block;
+	unsigned int	padding;
+	size_t			size;
+	int				vb;
+}					t_v;
+
+/*
+**	ft_sha256.c
+*/
+
+char				*ft_sha256(char *src, size_t size, int vb);
+void				ft_loop_sha256(unsigned int *tab, t_v *data);
+void				ft_algo_1_sha256(unsigned int *tab, t_v *data);
+void				ft_algo_2_sha256(t_v *d, unsigned int s[2]
+, unsigned int tmp[2]);
+
+/*
+**	ft_tools_sha256.c
+*/
+
+char				*ft_concat_sha256(t_v data);
+unsigned int		right_rot(unsigned int x, unsigned int offset);
+void				ft_add_size_big(size_t size, unsigned char *str);
+unsigned int		*ft_cut_sha256(unsigned char *src, t_v *data);
+unsigned char		*ft_padding_sha256(char *src, t_v *data, size_t len);
+
+/*
+** ft_init_sha256.c
+*/
+void				init_sha256(t_v *data);
+
 #endif

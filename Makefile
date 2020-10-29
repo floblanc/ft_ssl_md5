@@ -1,29 +1,26 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Makefile                                           :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: floblanc <floblanc@student.42.fr>          +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2020/09/09 11:54:28 by floblanc          #+#    #+#              #
-#    Updated: 2020/09/09 13:54:15 by floblanc         ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
+UNAME := $(shell uname)
 
-SHELL				=	/bin/zsh
+ifeq ($(UNAME), Linux)
+	SHELL				=	/bin/zsh
+endif
 
 # Executable name
-NAME				=	openssl
+NAME				=	ft_ssl
 
 # Compilation mode
 WALL				=	yes
 WEXTRA				=	yes
 WERROR				=	yes
+
 FSANITIZE			=	no
-DEBUG				=	no
+DEBUG				=	yes
 O2					=	no
 
-CC					:=	gcc
+ifeq ($(UNAME), Linux)
+	CC					:=	gcc -lm
+else
+	CC					:=	gcc
+endif
 GEN					:=	"Generation in mode"
 
 ifeq ($(WALL), yes)
@@ -41,13 +38,18 @@ ifeq ($(WERROR), yes)
 	GEN				:=	$(GEN) error
 endif
 
+ifeq ($(WEVERYTHING), yes)
+	CC				:=	$(CC) -Weverything
+	GEN				:=	$(GEN) all
+endif
+
 ifeq ($(FSANITIZE), yes)
 	CC				:=	$(CC) -fsanitize=address
 	GEN				:=	$(GEN) sanitize
 endif
 
 ifeq ($(DEBUG), yes)
-	CC				:=	$(CC) -g
+	CC				:=	$(CC) -g3
 	GEN				:=	$(GEN) debug
 endif
 
@@ -88,7 +90,22 @@ _IPURPLE			=	$'\033[45m
 _ICYAN				=	$'\033[46m
 _IGREY				=	$'\033[47m
 
-SRC_NAME =			main.c
+SRC_NAME =			openssl.c					\
+					ft_parsing.c				\
+					ft_tools.c					\
+					ft_print.c					\
+					md5/ft_md5.c				\
+					md5/ft_init_md5.c			\
+					md5/ft_tools.c				\
+					sha224/ft_sha224.c			\
+					sha256/ft_sha256.c			\
+					sha256/ft_tools_sha256.c	\
+					sha256/ft_init_sha256.c		\
+					sha384/ft_sha384.c			\
+					sha512/ft_sha512.c			\
+					sha512/ft_tools_sha512.c	\
+					sha512/ft_init_sha512.c		\
+
 
 SRC_PATH =			./src/
 
@@ -96,12 +113,16 @@ OBJ_PATH =			./obj/
 
 INC_PATH =			./include/
 
-INC_NAME =			ft_ssl_md5.h
+INC_NAME =			ft_md5.h					\
+					ft_sha224.h					\
+					ft_sha256.h					\
+					ft_sha384.h					\
+					ft_sha512.h					\
 
 
-LIBFT				=	./libftprintf/
-LIBFT_NAME			=	libprintf.a
-LIBFTINCLUDES		=	./libftprintf/include/
+LIBFT				=	./libft/
+LIBFT_NAME			=	libft.a
+LIBFTINCLUDES		=	./libft/
 
 INC	= $(addprefix $(INC_PATH), $(INC_NAME))
 SRC = $(addprefix $(SRC_PATH), $(SRC_NAME))
@@ -120,13 +141,17 @@ $(NAME) : $(LIBFT)/$(LIBFT_NAME) $(OBJ)
 		@echo "\n$(_WHITE)====================================================$(_END)"
 		@echo "$(_YELLOW)		COMPILING $(NAME)$(_END)"
 		@echo "$(_WHITE)====================================================$(_END)"
-		@$(CC) $(CFLAGS) -o $(NAME) $(OBJ) $(LIBFT)/$(LIBFT_NAME)
+		@$(CC) $(CFLAGS) -o $(NAME) $(OBJ) $(LIBFT)/$(LIBFT_NAME) -lm
 		@echo "\n$(_WHITE)$(_BOLD)$@\t$(_END)$(_GREEN)[OK]\n$(_END)"
 
 $(OBJ_PATH)%.o: $(SRC_PATH)%.c $(INCLUDE)
 	@mkdir -p $(OBJ_PATH)
 	@mkdir -p $(OBJ_PATH)md5/
-	@$(CC) -I $(INC_PATH) -I $(LIBFTINCLUDES)/libft.h -c $< -o $@
+	@mkdir -p $(OBJ_PATH)sha224/
+	@mkdir -p $(OBJ_PATH)sha256/
+	@mkdir -p $(OBJ_PATH)sha384/
+	@mkdir -p $(OBJ_PATH)sha512/
+	@$(CC) -I $(INC_PATH) -I $(LIBFTINCLUDES) -c $< -o $@
 	@echo "$(_END)$(_GREEN)[OK]\t$(_UNDER)$(_YELLOW)\t"	\
 		"COMPILE :$(_END)$(_BOLD)$(_WHITE)\t$<"
 
@@ -137,7 +162,7 @@ clean:
 
 fclean: clean
 	@rm -f $(NAME)
-	@echo "$(_YELLOW)Remove :\t$(_RED)" $(NAME)
+	@echo "$(_YELLOW)Remove :\t$(_RED)" $(LDFLAGS)$(NAME)
 	@rm -f $(LIBFT)$(LIBFT_NAME)
 	@echo "$(_YELLOW)Remove :\t$(_RED)" $(LIBFT)$(LIBFT_NAME)"$(_END)"
 
