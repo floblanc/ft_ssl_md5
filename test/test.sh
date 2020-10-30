@@ -166,10 +166,10 @@ rm -Rf error_test
 while :
 do
 	clear
-	echo " --------------------"
-	echo "| 1.md5 2.sha256 |\n
-		  | 3.both 0.Exit |" | column -t
-	echo " --------------------"
+	echo " ------------------------------------------"
+	echo "| 1.md5 2.sha224 3.sha256 4.sha384 |\n
+		  | 5.sha512 6.all 0.Exit . |" | column -t
+	echo " ------------------------------------------"
 	read INPUT
 	case $INPUT in
 					1)
